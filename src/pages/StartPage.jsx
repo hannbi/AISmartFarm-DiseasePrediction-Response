@@ -48,6 +48,7 @@ const styles = {
     display: "flex",
     alignItems: "center",
     overflow: "hidden",
+    fontFamily: "'Pretendard', system-ui, Avenir, Helvetica, Arial, sans-serif",
   },
 
   content: {

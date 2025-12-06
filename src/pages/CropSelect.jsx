@@ -234,6 +234,7 @@ const styles = {
     overflow: "hidden",
     margin: 0,
     padding: 0,
+    fontFamily: "'Pretendard', system-ui, Avenir, Helvetica, Arial, sans-serif",
   },
   overlay: {
     position: "absolute",
