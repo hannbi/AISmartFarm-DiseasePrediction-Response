@@ -305,14 +305,14 @@ const styles = {
   },
   topRow: {
     display: "flex",
-    gap: "0",
+    gap: "36px",
     alignItems: "center",
     justifyContent: "center",
     paddingBottom: "18px",
     borderBottom: "1px solid #eee",
     marginBottom: "18px",
   },
-  meta: { padding: "6px 18px", color: "#333" },
+  meta: { fontSize: "20px",padding: "6px 18px", color: "#333"},
   metaDivider: {
     width: "1px",
     height: "20px",
