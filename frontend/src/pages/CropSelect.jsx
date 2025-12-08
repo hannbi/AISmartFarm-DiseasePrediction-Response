@@ -259,10 +259,10 @@ const styles = {
     zIndex: 1,
     background: "white",
     borderRadius: "20px",
-    padding: "50px 60px",
+    padding: "50px 80px",
     maxWidth: "1300px",
-    width: "80%",
-    minHeight: "250px",
+    width: "90%",
+    minHeight: "300px",
   },
   subtitle: {
     fontSize: "45px",
