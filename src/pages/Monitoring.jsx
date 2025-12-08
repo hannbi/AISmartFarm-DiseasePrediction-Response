@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useParams } from "react-router-dom";
+import { useParams, useNavigate } from "react-router-dom";
 import startBg from "../assets/start.png";
 import Bg from "../assets/background.png";
 
@@ -17,9 +17,12 @@ export default function Monitoring() {
     });
   };
 
+  const navigate = useNavigate();
+
   const handleResult = () => {
-    const list = Array.from(selected).join(", ") || "선택된 장비 없음";
-    alert(`선택된 장비: ${list}`);
+    const list = Array.from(selected);
+    // navigate to dashboard and pass selected items in state
+    navigate(`/dashboard/${id}`, { state: { selected: list } });
   };
 
   const groups = [
