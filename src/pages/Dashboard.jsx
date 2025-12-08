@@ -1,5 +1,6 @@
 import { useLocation, useParams, useNavigate } from "react-router-dom";
 import startBg from "../assets/start.png";
+import chatbotImg from "../assets/chatbot.png";
 import { useMemo, useState } from "react";
 
 export default function Dashboard() {
@@ -236,6 +237,21 @@ export default function Dashboard() {
               <path d="M0 70 C50 40 120 30 220 50 L220 90 L0 90 Z" fill="#ffd7d7" stroke="#f06060" strokeWidth="2" />
             </svg>
           </div>
+          
+          <div style={{...styles.legend, gridColumn: "3"}}>
+            <div style={styles.legendItem}>
+              <div style={{...styles.legendDot, backgroundColor: "#2b7aff"}}></div>
+              <span style={{...styles.legendText, color: "#2b7aff"}}>적정</span>
+            </div>
+            <div style={styles.legendItem}>
+              <div style={{...styles.legendDot, backgroundColor: "#ff9a2a"}}></div>
+              <span style={{...styles.legendText, color: "#ff9a2a"}}>경고</span>
+            </div>
+            <div style={styles.legendItem}>
+              <div style={{...styles.legendDot, backgroundColor: "#ff4d4f"}}></div>
+              <span style={{...styles.legendText, color: "#ff4d4f"}}>주의</span>
+            </div>
+          </div>
         </div>
 
         <div style={styles.toolsBox}>
@@ -250,6 +266,10 @@ export default function Dashboard() {
         <div style={styles.bottomRight}>
           <button style={styles.solutionBtn} onClick={handleSolution}>솔루션 확인하기 →</button>
         </div>
+        
+        <button style={styles.chatbotButton}>
+          <img src={chatbotImg} alt="Chatbot" style={styles.chatbotImage} />
+        </button>
       </div>
     </div>
   );
@@ -265,7 +285,7 @@ const styles = {
     display: "flex",
     alignItems: "center",
     justifyContent: "center",
-    fontFamily: "'Pretendard', system-ui, Avenir, Helvetica, Arial, sans-serif",
+    fontFamily: "'Pretendard', sans-serif",
   },
   overlay: {
     position: "absolute",
@@ -281,6 +301,7 @@ const styles = {
     borderRadius: "20px",
     padding: "28px 36px",
     boxShadow: "0 10px 40px rgba(0,0,0,0.25)",
+    minHeight: "600px",
   },
   topRow: {
     display: "flex",
@@ -299,13 +320,13 @@ const styles = {
   },
   leftArea: { display: "grid", gridTemplateColumns: "1fr 1fr", gridTemplateRows: "1fr 1fr", gap: "18px", gridRow: "1 / span 2" },
   metricsRow: { display: "grid", gridTemplateColumns: "2fr 1fr 1fr", gridTemplateRows: "1fr 1fr", gap: "18px", alignItems: "stretch" },
-  smallCard: { border: "1px solid #ddd", borderRadius: "12px", padding: "18px", textAlign: "center", minHeight: "120px", display: "flex", flexDirection: "column", justifyContent: "center" },
-  label: { color: "#666", fontWeight: 600, marginBottom: "6px" },
-  valueBlue: { color: "#2b7aff", fontSize: "20px", fontWeight: 800 },
-  valueOrange: { color: "#ff9a2a", fontSize: "20px", fontWeight: 800 },
-  valueRed: { color: "#ff4d4f", fontSize: "20px", fontWeight: 800 },
-  centerCard: { border: "1px solid #ddd", borderRadius: "12px", padding: "18px 18px 18px 18px", paddingTop: "32px", textAlign: "center", minHeight: "240px", display: "flex", flexDirection: "column", justifyContent: "center", alignItems: "center" },
-  rightCard: { border: "1px solid #ddd", borderRadius: "12px", padding: "18px 18px 18px 18px", paddingTop: "8px", textAlign: "center", minHeight: "240px", display: "flex", flexDirection: "column", justifyContent: "center", alignItems: "center" },
+  smallCard: { border: "1px solid #ddd", borderRadius: "12px", padding: "18px 16px", textAlign: "center", minHeight: "120px", display: "flex", flexDirection: "column", justifyContent: "center" },
+  label: { color: "black",fontSize: "20px", fontWeight: 800, marginBottom: "6px" },
+  valueBlue: { color: "#2b7aff", fontSize: "32px", fontWeight: 800 },
+  valueOrange: { color: "#ff9a2a", fontSize: "32px", fontWeight: 800 },
+  valueRed: { color: "#ff4d4f", fontSize: "32px", fontWeight: 800 },
+  centerCard: { border: "1px solid #ddd", borderRadius: "12px", padding: "32px 16px 18px 16px", textAlign: "center", minHeight: "240px", display: "flex", flexDirection: "column", justifyContent: "center", alignItems: "center" },
+  rightCard: { border: "1px solid #ddd", borderRadius: "12px", padding: "8px 16px 18px 16px", textAlign: "center", minHeight: "240px", display: "flex", flexDirection: "column", justifyContent: "center", alignItems: "center" },
   // centerNote removed as per design
   warnIcon: { marginLeft: "8px", fontSize: "18px", cursor: "pointer", position: "relative", display: "inline-block" },
   tooltip: {
@@ -337,7 +358,7 @@ const styles = {
     lineHeight: "1.5",
   },
   rightNote: { color: "#7a1a1a", background: "#fff0f0", padding: "10px", borderRadius: "8px", margin: "8px auto", maxWidth: "280px", fontSize: "13px" },
-  cardTitle: { color: "#000", fontWeight: 700, marginBottom: "18px", marginTop: "0" },
+  cardTitle: { color: "#000",fontSize: "22px", fontWeight: 700, marginBottom: "18px", marginTop: "0" },
   donutWrap: { display: "flex", justifyContent: "center", alignItems: "center", marginTop: "24px" },
   riskBarContainer: { display: "flex", alignItems: "center", gap: "12px", marginTop: "16px", width: "100%", maxWidth: "200px" },
   riskValue: { color: "#ff4d4f", fontWeight: 800, fontSize: "24px", minWidth: "45px", textAlign: "left" },
@@ -357,11 +378,54 @@ const styles = {
     transition: "width 0.3s ease",
     minWidth: "2px",
   },
-  toolsBox: { marginTop: "26px", border: "1px solid #ddd", borderRadius: "12px", padding: "20px" },
-  toolsTitle: { color: "#000", textAlign: "center", fontWeight: 700, marginBottom: "12px" },
+  toolsBox: { marginTop: "26px", border: "1px solid #ddd", borderRadius: "12px", padding: "20px",marginTop: "16px", marginBottom: "24px" },
+  toolsTitle: { color: "#000", textAlign: "center",fontSize: "22px", fontWeight: 700, marginBottom: "12px" },
   toolsRow: { display: "flex", gap: "12px", justifyContent: "center", flexWrap: "wrap" },
   toolBadge: { padding: "10px 18px", borderRadius: "24px", background: "#000", color: "#fff", fontWeight: 700 },
   toolsEmpty: { color: "#888" },
   bottomRight: { display: "flex", justifyContent: "flex-end", marginTop: "18px" },
   solutionBtn: { padding: "12px 26px", borderRadius: "28px", background: "#000", color: "#fff", border: "none", fontWeight: 700, cursor: "pointer" },
+  chatbotButton: {
+    position: "absolute",
+    bottom: "20px",
+    left: "28px",
+    width: "60px",
+    height: "60px",
+    borderRadius: "50%",
+    background: "#ffffff",
+    border: "none",
+    cursor: "pointer",
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    boxShadow: "2px 2px 20.2px rgba(0,0,0,0.15)",
+    zIndex: 1000,
+    transition: "transform 0.2s ease",
+  },
+  chatbotImage: {
+    width: "40px",
+    height: "40px",
+    objectFit: "contain",
+  },
+  legend: {
+    display: "flex",
+    justifyContent: "right",
+    alignItems: "center",
+    gap: "10px",
+    marginTop: "2px",
+  },
+  legendItem: {
+    display: "flex",
+    alignItems: "center",
+    gap: "4px",
+  },
+  legendDot: {
+    width: "10px",
+    height: "10px",
+    borderRadius: "50%",
+  },
+  legendText: {
+    fontSize: "13px",
+    color: "#333",
+  },
 };
