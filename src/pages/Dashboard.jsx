@@ -1,6 +1,6 @@
 import { useLocation, useParams, useNavigate } from "react-router-dom";
 import startBg from "../assets/start.png";
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 
 export default function Dashboard() {
   const { id } = useParams();
@@ -26,6 +26,12 @@ export default function Dashboard() {
     alert("솔루션 확인: 선택 장비 - " + (selected.join(", ") || "없음"));
   };
 
+  // Hover state for warning tooltip
+  const [showTooltip, setShowTooltip] = useState(false);
+  
+  // Show warning icon only if stress is 70 or above
+  const showWarning = metrics.stress >= 70;
+
   return (
     <div style={styles.container}>
       <div style={styles.overlay} />
@@ -47,7 +53,30 @@ export default function Dashboard() {
           </div>
 
           <div style={{ ...styles.centerCard, gridRow: "1 / span 2" }}>
-            <div style={styles.cardTitle}>스트레스 지수 <span style={styles.warnIcon}>⚠️</span></div>
+            <div style={styles.cardTitle}>
+              스트레스 지수{" "}
+              {showWarning && (
+                <span
+                  style={styles.warnIcon}
+                  onMouseEnter={() => setShowTooltip(true)}
+                  onMouseLeave={() => setShowTooltip(false)}
+                >
+                  ⚠️
+                  {showTooltip && (
+                    <div style={styles.tooltip}>
+                      <div style={styles.tooltipHeader}>
+                        ⚠️ 스트레스 지수 경고
+                      </div>
+                      <div style={styles.tooltipContent}>
+                        고습과 광량 부족으로 스트레스
+                        <br />
+                        지수가 상승했습니다.
+                      </div>
+                    </div>
+                  )}
+                </span>
+              )}
+            </div>
             <div style={styles.donutWrap}>
               {(() => {
                 // Gauge: 220 degrees, open at bottom, starting from left
@@ -206,7 +235,35 @@ const styles = {
   centerCard: { border: "1px solid #ddd", borderRadius: "12px", padding: "18px", textAlign: "center", minHeight: "240px", display: "flex", flexDirection: "column", justifyContent: "center", alignItems: "center" },
   rightCard: { border: "1px solid #ddd", borderRadius: "12px", padding: "18px", textAlign: "center", minHeight: "240px", display: "flex", flexDirection: "column", justifyContent: "center", alignItems: "center" },
   // centerNote removed as per design
-  warnIcon: { marginLeft: "8px", fontSize: "18px" },
+  warnIcon: { marginLeft: "8px", fontSize: "18px", cursor: "pointer", position: "relative", display: "inline-block" },
+  tooltip: {
+    position: "absolute",
+    top: "100%",
+    right: 0,
+    marginTop: "8px",
+    padding: "12px 16px",
+    background: "rgba(255, 248, 225, 0.6)",
+    border: "2px solid #f29d3a",
+    borderRadius: "8px",
+    boxShadow: "0 4px 12px rgba(0,0,0,0.15)",
+    zIndex: 1000,
+    minWidth: "240px",
+    textAlign: "left",
+  },
+  tooltipHeader: {
+    fontWeight: 700,
+    fontSize: "14px",
+    color: "#000",
+    marginBottom: "8px",
+    display: "flex",
+    alignItems: "center",
+    gap: "6px",
+  },
+  tooltipContent: {
+    fontSize: "13px",
+    color: "#333",
+    lineHeight: "1.5",
+  },
   rightNote: { color: "#7a1a1a", background: "#fff0f0", padding: "10px", borderRadius: "8px", margin: "8px auto", maxWidth: "280px", fontSize: "13px" },
   cardTitle: { color: "#000", fontWeight: 700, marginBottom: "18px" },
   donutWrap: { display: "flex", justifyContent: "center", alignItems: "center", marginTop: "24px" },
