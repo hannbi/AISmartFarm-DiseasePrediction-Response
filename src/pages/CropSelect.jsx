@@ -32,7 +32,9 @@ export default function CropSelect() {
 
   const handleConfirm = () => {
     if (selectedDate) {
-      navigate(`/monitoring/${selectedCrop}`);
+      navigate(`/monitoring/${selectedCrop}`, {
+        state: { selectedDate }
+      });
     }
   };
 
@@ -176,6 +178,13 @@ export default function CropSelect() {
                       selectedDate.day === day;
                     const isSunday = day && idx % 7 === 0;
                     const isSaturday = day && idx % 7 === 6;
+                    
+                    // Check if date is in the future
+                    const dateObj = day ? new Date(currentYear, currentMonth - 1, day) : null;
+                    const today = new Date();
+                    today.setHours(0, 0, 0, 0);
+                    const isFuture = dateObj && dateObj > today;
+                    const isDisabled = isFuture;
 
                     return (
                       <div
@@ -186,8 +195,9 @@ export default function CropSelect() {
                           ...(isSelected ? styles.daySelected : {}),
                           ...(isSelected ? {} : (isSunday ? styles.daySunday : {})),
                           ...(isSelected ? {} : (isSaturday ? styles.daySaturday : {})),
+                          ...(isDisabled ? styles.dayDisabled : {}),
                         }}
-                        onClick={() => day && handleDateSelect(day)}
+                        onClick={() => day && !isDisabled && handleDateSelect(day)}
                       >
                         {day}
                       </div>
@@ -421,6 +431,11 @@ const styles = {
   },
   daySaturday: {
     color: "#0066ff",
+  },
+  dayDisabled: {
+    color: "#ddd",
+    cursor: "not-allowed",
+    opacity: 0.5,
   },
   confirmBtn: {
     width: "40%",

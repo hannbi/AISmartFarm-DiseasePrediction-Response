@@ -1,12 +1,14 @@
 import { useState } from "react";
-import { useParams, useNavigate } from "react-router-dom";
+import { useParams, useNavigate, useLocation } from "react-router-dom";
 import startBg from "../assets/start.png";
 import Bg from "../assets/background.png";
 
 
 export default function Monitoring() {
   const { id } = useParams();
+  const location = useLocation();
   const [selected, setSelected] = useState(new Set());
+  const selectedDate = location.state?.selectedDate || null;
 
   const toggle = (key) => {
     setSelected((prev) => {
@@ -21,8 +23,13 @@ export default function Monitoring() {
 
   const handleResult = () => {
     const list = Array.from(selected);
-    // navigate to dashboard and pass selected items in state
-    navigate(`/dashboard/${id}`, { state: { selected: list } });
+    // navigate to dashboard and pass selected items and date in state
+    navigate(`/dashboard/${id}`, { 
+      state: { 
+        selected: list,
+        selectedDate: selectedDate
+      } 
+    });
   };
 
   const groups = [

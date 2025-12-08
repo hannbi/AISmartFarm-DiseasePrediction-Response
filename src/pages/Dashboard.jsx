@@ -9,7 +9,24 @@ export default function Dashboard() {
   const selected = (location.state && location.state.selected) || [];
 
   const cropMap = useMemo(() => ({ 1: "딸기", 2: "토마토", 3: "상추", 4: "배추" }), []);
+  const cropIconMap = useMemo(() => ({ 1: "🍓", 2: "🍅", 3: "🥬", 4: "🥬" }), []);
   const cropName = cropMap[id] || "작물";
+  const cropIcon = cropIconMap[id] || "🌱";
+  
+  // Get selected date from location state
+  const selectedDate = location.state?.selectedDate || null;
+  
+  // Calculate days since transplanting
+  const daysSinceTransplant = useMemo(() => {
+    if (!selectedDate) return 34; // Default value
+    
+    const transplantDate = new Date(selectedDate.year, selectedDate.month - 1, selectedDate.day);
+    const today = new Date();
+    const diffTime = today - transplantDate;
+    const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+    
+    return diffDays >= 0 ? diffDays : 0;
+  }, [selectedDate]);
 
   // sample metrics (static placeholders matching attached design)
   const metrics = {
@@ -41,10 +58,21 @@ export default function Dashboard() {
 
       <div style={styles.card}>
         <div style={styles.topRow}>
-          <div style={styles.meta}>🍓 품종: <strong>{cropName}</strong></div>
-          <div style={styles.meta}>🌱 정식 후 34일차</div>
-          <div style={styles.meta}>📍 현재 단계: 생육기 (15-60일)</div>
-          <div style={styles.meta}>⏳ 다음 단계까지 26일 남음</div>
+          <div style={styles.meta}>
+            {cropIcon} 품종: <strong>{cropName}</strong>
+          </div>
+          <div style={styles.metaDivider}></div>
+          <div style={styles.meta}>
+            🌱 정식 후 {daysSinceTransplant}일차
+          </div>
+          <div style={styles.metaDivider}></div>
+          <div style={styles.meta}>
+            📍 현재 단계: 생육기 (15-60일)
+          </div>
+          <div style={styles.metaDivider}></div>
+          <div style={styles.meta}>
+            ⏳ 다음 단계까지 {Math.max(0, 60 - daysSinceTransplant)}일 남음
+          </div>
         </div>
 
         <div style={styles.metricsRow}>
@@ -256,13 +284,19 @@ const styles = {
   },
   topRow: {
     display: "flex",
-    gap: "18px",
+    gap: "0",
     alignItems: "center",
+    justifyContent: "center",
     paddingBottom: "18px",
     borderBottom: "1px solid #eee",
     marginBottom: "18px",
   },
-  meta: { padding: "6px 12px", color: "#333" },
+  meta: { padding: "6px 18px", color: "#333" },
+  metaDivider: {
+    width: "1px",
+    height: "20px",
+    backgroundColor: "#ddd",
+  },
   leftArea: { display: "grid", gridTemplateColumns: "1fr 1fr", gridTemplateRows: "1fr 1fr", gap: "18px", gridRow: "1 / span 2" },
   metricsRow: { display: "grid", gridTemplateColumns: "2fr 1fr 1fr", gridTemplateRows: "1fr 1fr", gap: "18px", alignItems: "stretch" },
   smallCard: { border: "1px solid #ddd", borderRadius: "12px", padding: "18px", textAlign: "center", minHeight: "120px", display: "flex", flexDirection: "column", justifyContent: "center" },
