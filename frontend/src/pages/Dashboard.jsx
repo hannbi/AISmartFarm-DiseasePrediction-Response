@@ -2,7 +2,8 @@ import { useLocation, useParams, useNavigate } from "react-router-dom";
 import startBg from "../assets/start.png";
 import chatbotImg from "../assets/chatbot.png";
 import GrayMold from "../assets/graymold.png";
-import { useMemo, useState } from "react";
+import { useMemo, useState, useEffect } from "react";
+import { useSensorAnalysis } from "../hooks/useSensorAnalysis";
 
 export default function Dashboard() {
   const { id } = useParams();
@@ -11,8 +12,36 @@ export default function Dashboard() {
   const selected = (location.state && location.state.selected) || [];
 
   const cropMap = useMemo(() => ({ 1: "딸기", 2: "토마토", 3: "상추", 4: "배추" }), []);
-  const cropIconMap = useMemo(() => ({ 1: "🍓", 2: "🍅", 3: "🥬", 4: "🥬" }), []);
   const cropName = cropMap[id] || "작물";
+
+  // 백엔드 API 연동
+  const {
+    sensorData,
+    analysisResult,
+    loading,
+    error,
+    lastUpdated,
+    fetchSensorData,
+    analyzeData,
+  } = useSensorAnalysis({
+    cropName,
+    equipmentList: selected,
+    autoFetch: false, // 수동으로 조회
+    useDummyData: true, // 더미 데이터 사용 (ESP32 없을 때)
+  });
+
+  // 컴포넌트 마운트 시 데이터 조회
+  useEffect(() => {
+    fetchSensorData();
+  }, [fetchSensorData]);
+
+  // 분석 버튼 클릭 시 AI 분석 실행
+  const handleAnalyze = async () => {
+    const additionalInfo = `${cropName}, 정식 후 ${daysSinceTransplant}일차, ${currentStageInfo?.name || ''}`;
+    await analyzeData(null, additionalInfo);
+  };
+
+  const cropIconMap = useMemo(() => ({ 1: "🍓", 2: "🍅", 3: "🥬", 4: "🥬" }), []);
   const cropIcon = cropIconMap[id] || "🌱";
 
   // Get selected date from location state
@@ -104,15 +133,31 @@ export default function Dashboard() {
     return nextStage.range[0] - displayDays;
   }, [cropName, currentStageInfo, displayDays]);
 
-  // sample metrics (static placeholders matching attached design)
-  const metrics = {
-    temp: "23.4°C",
-    humid: "87%",
-    lux: "4,000lux",
-    soil: "40%",
-    stress: 72,
-    risk: 78,
-  };
+  // 센서 데이터 기반 metrics (백엔드 데이터 우선, 없으면 기본값)
+  const metrics = useMemo(() => {
+    if (sensorData) {
+      return {
+        temp: `${sensorData.temperature?.toFixed(1) || '23.4'}°C`,
+        humid: `${sensorData.humidity?.toFixed(0) || '87'}%`,
+        lux: `${sensorData.light_intensity?.toLocaleString() || '4,000'}lux`,
+        soil: `${sensorData.soil_moisture?.toFixed(0) || '40'}%`,
+        stress: analysisResult?.growth_environment?.overall_score 
+          ? Math.round(100 - analysisResult.growth_environment.overall_score) 
+          : 72,
+        risk: analysisResult?.diseases?.[0]?.probability 
+          ? Math.round(analysisResult.diseases[0].probability) 
+          : 78,
+      };
+    }
+    return {
+      temp: "23.4°C",
+      humid: "87%",
+      lux: "4,000lux",
+      soil: "40%",
+      stress: 72,
+      risk: 78,
+    };
+  }, [sensorData, analysisResult]);
 
   const handleSolution = () => {
     // placeholder: navigate to a solution page later
@@ -383,12 +428,35 @@ export default function Dashboard() {
 
         <div style={styles.bottomRight}>
           <button
-            style={styles.solutionBtn}
-            onClick={() => setShowSolutionModal(true)}
+            style={{...styles.solutionBtn, opacity: loading ? 0.7 : 1}}
+            onClick={handleAnalyze}
+            disabled={loading}
           >
-            솔루션 확인하기 →
+            {loading ? '분석 중...' : analysisResult ? 'AI 재분석' : 'AI 분석 시작'} →
           </button>
+          {analysisResult && (
+            <button
+              style={{...styles.solutionBtn, marginLeft: '10px'}}
+              onClick={() => setShowSolutionModal(true)}
+            >
+              솔루션 확인하기 →
+            </button>
+          )}
         </div>
+        
+        {/* 에러 메시지 */}
+        {error && (
+          <div style={styles.errorBox}>
+            ⚠️ {error}
+          </div>
+        )}
+        
+        {/* 마지막 업데이트 시간 */}
+        {lastUpdated && (
+          <div style={styles.updateTime}>
+            마지막 업데이트: {lastUpdated.toLocaleTimeString('ko-KR')}
+          </div>
+        )}
         {showSolutionModal && (
           <div style={styles.innerOverlay}>
             <div style={styles.innerModal}>
@@ -401,33 +469,101 @@ export default function Dashboard() {
                 ✕
               </button>
 
-              <h2 style={styles.modalTitle}>솔루션</h2>
+              <h2 style={styles.modalTitle}>AI 분석 결과</h2>
 
-              <img src={GrayMold} alt="잿빛 곰팡이병" style={styles.modalImage} />
-          
+              {/* 병해충 이미지 */}
+              {analysisResult?.diseases?.[0] && (
+                <>
+                  {analysisResult.diseases[0].images && analysisResult.diseases[0].images.length > 0 ? (
+                    <img 
+                      src={analysisResult.diseases[0].images[0]} 
+                      alt={analysisResult.diseases[0].name} 
+                      style={styles.modalImage} 
+                      onError={(e) => { e.target.src = GrayMold; }} // 이미지 로드 실패 시 기본 이미지
+                    />
+                  ) : (
+                    <img src={GrayMold} alt="기본 이미지" style={styles.modalImage} />
+                  )}
 
-              <h3 style={styles.modalDiseaseTitle}>🐛 잿빛 곰팡이병 (Botrytis cinerea)</h3>
-              <p style={styles.modalDescription}>
-                잎, 줄기, 과일에 회색 포자가 돋으며 급속 확산되는 곰팡이성 병해입니다.
-              </p>
+                  <h3 style={styles.modalDiseaseTitle}>
+                    🐛 {analysisResult.diseases[0].name} 
+                    {analysisResult.diseases[0].scientific_name && 
+                      ` (${analysisResult.diseases[0].scientific_name})`
+                    }
+                  </h3>
+                  <p style={styles.modalDescription}>
+                    발생 확률: <strong>{analysisResult.diseases[0].probability?.toFixed(1)}%</strong>
+                  </p>
+                  <p style={styles.modalDescription}>
+                    {analysisResult.diseases[0].symptoms || analysisResult.diseases[0].reason}
+                  </p>
 
-              <h3 style={styles.modalSectionTitle}>🔍 원인 분석</h3>
-              <ul style={styles.modalList}>
-                <li>온도: 23.4°C → 발병 범위 (15~25°C)</li>
-                <li>습도: 87% → 85% 이상에서 급증</li>
-                <li>광량: 4,000 lux → 저광일수록 수분 잔존</li>
-                <li>환기 부족 → 공기 정체 시 포자 확산↑</li>
-              </ul>
+                  <h3 style={styles.modalSectionTitle}>🔍 원인 분석</h3>
+                  <ul style={styles.modalList}>
+                    <li>온도: {metrics.temp} → {analysisResult.growth_environment?.temperature_score ? 
+                      `점수 ${analysisResult.growth_environment.temperature_score}/100` : '분석 중'}</li>
+                    <li>습도: {metrics.humid} → {analysisResult.growth_environment?.humidity_score ? 
+                      `점수 ${analysisResult.growth_environment.humidity_score}/100` : '분석 중'}</li>
+                    <li>토양 수분: {metrics.soil} → {analysisResult.growth_environment?.soil_moisture_score ? 
+                      `점수 ${analysisResult.growth_environment.soil_moisture_score}/100` : '분석 중'}</li>
+                    <li>{analysisResult.diseases[0].reason}</li>
+                  </ul>
 
-              <h3 style={styles.modalSectionTitle}>💡 추천 조치</h3>
-              <div style={styles.modalHighlightBox}>
-                <ul style={styles.modalList}>
-                  <li>환기 강화: 환풍기로 공기흐름 확보</li>
-                  <li>습도 관리: 목표 70~75%</li>
-                  <li>광량 확보: LED 밝기↑, 점등 연장</li>
-                  <li>병든 잎 제거: 확산 차단</li>
-                </ul>
-              </div>
+                  <h3 style={styles.modalSectionTitle}>💡 추천 조치</h3>
+                  <div style={styles.modalHighlightBox}>
+                    <ul style={styles.modalList}>
+                      {analysisResult.recommendations?.map((rec, idx) => (
+                        <li key={idx}>{rec}</li>
+                      ))}
+                      {analysisResult.diseases[0].prevention && (
+                        <li><strong>예방:</strong> {analysisResult.diseases[0].prevention}</li>
+                      )}
+                    </ul>
+                  </div>
+
+                  {/* 추가 병해충 정보 */}
+                  {analysisResult.diseases.length > 1 && (
+                    <>
+                      <h3 style={styles.modalSectionTitle}>⚠️ 기타 주의 병해충</h3>
+                      <ul style={styles.modalList}>
+                        {analysisResult.diseases.slice(1, 3).map((disease, idx) => (
+                          <li key={idx}>
+                            {disease.name} ({disease.probability?.toFixed(1)}%)
+                          </li>
+                        ))}
+                      </ul>
+                    </>
+                  )}
+
+                  {/* NCPMS 이미지 갤러리 */}
+                  {analysisResult.diseases[0].images && analysisResult.diseases[0].images.length > 1 && (
+                    <>
+                      <h3 style={styles.modalSectionTitle}>📸 참고 이미지</h3>
+                      <div style={styles.imageGallery}>
+                        {analysisResult.diseases[0].images.slice(1, 3).map((img, idx) => (
+                          <img 
+                            key={idx}
+                            src={img} 
+                            alt={`${analysisResult.diseases[0].name} ${idx + 2}`} 
+                            style={styles.galleryImage}
+                            onError={(e) => { e.target.style.display = 'none'; }}
+                          />
+                        ))}
+                      </div>
+                    </>
+                  )}
+                </>
+              )}
+
+              {!analysisResult?.diseases?.[0] && (
+                <>
+                  <img src={GrayMold} alt="분석 대기" style={styles.modalImage} />
+                  <h3 style={styles.modalDiseaseTitle}>AI 분석을 실행해주세요</h3>
+                  <p style={styles.modalDescription}>
+                    'AI 분석 시작' 버튼을 클릭하여 현재 환경을 분석하세요.
+                  </p>
+                </>
+              )}
 
               <button style={styles.applyBtn}>솔루션 즉시 적용</button>
 
@@ -720,6 +856,41 @@ const styles = {
     objectFit: "cover",
     borderRadius: "12px",
     marginBottom: "10px",
+  },
+  imageGallery: {
+    display: "flex",
+    gap: "10px",
+    justifyContent: "center",
+    marginTop: "10px",
+    marginBottom: "20px",
+  },
+  galleryImage: {
+    width: "150px",
+    height: "100px",
+    borderRadius: "8px",
+    objectFit: "cover",
+    cursor: "pointer",
+    transition: "transform 0.2s ease",
+  },
+  errorBox: {
+    position: "absolute",
+    bottom: "80px",
+    right: "20px",
+    background: "rgba(255, 77, 79, 0.9)",
+    color: "white",
+    padding: "12px 20px",
+    borderRadius: "8px",
+    fontSize: "14px",
+    fontWeight: 500,
+    boxShadow: "0 4px 12px rgba(255, 77, 79, 0.3)",
+    zIndex: 1000,
+  },
+  updateTime: {
+    position: "absolute",
+    bottom: "20px",
+    left: "100px",
+    fontSize: "12px",
+    color: "#999",
   },
 
   modalDiseaseTitle: {
