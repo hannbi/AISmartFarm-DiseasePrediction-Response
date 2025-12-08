@@ -16,6 +16,18 @@ http://localhost:8000
 
 ## 📡 API 엔드포인트
 
+### 🔄 두 가지 분석 시나리오
+
+#### 1️⃣ 더미 데이터 테스트 (`/api/dummy`)
+**사용 목적:** 프론트엔드 개발 및 테스트  
+**데이터 흐름:** 프론트엔드가 **센서 데이터**를 직접 전송 → 백엔드 분석 → 결과 반환
+
+#### 2️⃣ 실시간 센서 분석 (`/api/realtime`)
+**사용 목적:** 프로덕션 환경 (ESP32 연동)  
+**데이터 흐름:** 프론트엔드가 **작물 정보만** 전송 → 백엔드가 **ESP32에서 센서 데이터 수집** → 분석 → 센서 데이터 + 결과 반환
+
+---
+
 ### 1. Health Check
 
 서버 상태를 확인합니다.
@@ -257,6 +269,257 @@ POST /api/sensor/analyze-processed
 
 ---
 
+### 5. 더미 데이터 분석 (프론트엔드 테스트용)
+
+프론트엔드에서 더미 센서 데이터를 전송하여 전체 분석 플로우를 테스트합니다. ESP32 물리적 연동 전 개발 및 테스트용으로 사용합니다.
+
+```http
+POST /api/dummy/analyze-dummy
+```
+
+**Request Body**
+
+```json
+{
+  "sensor_data": {
+    "device_id": "ESP32_001",
+    "temperature": 25.5,
+    "humidity": 65.0,
+    "soil_moisture": 45.0,
+    "light_intensity": 5000.0,
+    "co2_level": 800.0,
+    "timestamp": "2025-12-08T10:30:00"  // optional
+  },
+  "crop_type": "tomato",
+  "equipment_list": ["LED 조명", "환기 시스템", "관수 시스템"],
+  "user_context": "방울토마토, 재배 3주차"  // optional
+}
+```
+
+**Request Body 필드**
+
+| 필드 | 타입 | 필수 | 설명 |
+|-----|------|------|------|
+| sensor_data | object | Yes | 센서 데이터 객체 (SensorData 모델과 동일) |
+| crop_type | string | No | 작물 종류 (default: "default") |
+| equipment_list | array[string] | No | 사용 중인 장비 목록 |
+| user_context | string | No | 추가 정보 (품종, 재배 기간 등) |
+
+**응답 예시**
+
+```json
+{
+  "growth_environment": {
+    "overall_score": 75.5,
+    "status": "양호",
+    "temperature_score": 85.0,
+    "humidity_score": 60.0,
+    "soil_moisture_score": 80.0,
+    "detail": "현재 온도는 최적 범위이나, 습도가 다소 높은 상태입니다."
+  },
+  "diseases": [
+    {
+      "name": "잿빛곰팡이병",
+      "probability": 68.5,
+      "reason": "습도 70% 이상 유지, 환기 부족",
+      "symptoms": "잎과 줄기에 회색 곰팡이 발생",
+      "prevention": "습도 관리 및 환기 강화",
+      "scientific_name": "Botrytis cinerea",
+      "images": [
+        "https://ncpms.rda.go.kr/images/disease_001.jpg",
+        "https://ncpms.rda.go.kr/images/disease_002.jpg"
+      ],
+      "detailed_symptoms": [
+        "잎과 줄기에 회갈색 병반 발생",
+        "습한 조건에서 회색 곰팡이 형성"
+      ],
+      "management": {
+        "prevention": ["적정 재식 거리 유지", "시설 내 환기 철저"],
+        "treatment": ["등록된 살균제 살포"]
+      },
+      "reference_url": "https://ncpms.rda.go.kr",
+      "source": "국가농작물병해충관리시스템"
+    }
+  ],
+  "risk_level": "중간",
+  "recommendations": [
+    "환기를 통해 습도를 60% 이하로 낮추세요",
+    "물 주기를 줄이고 토양 배수를 확인하세요"
+  ],
+  "optimal_conditions": {
+    "temperature": "20-25℃",
+    "humidity": "50-60%",
+    "soil_moisture": "40-50%"
+  },
+  "analysis_summary": "토마토 생육 환경은 전반적으로 양호하나...",
+  "timestamp": "2025-12-08T10:30:00"
+}
+```
+
+**상태 코드**
+- `200 OK`: 정상 처리
+- `422 Unprocessable Entity`: 입력 데이터 유효성 오류
+- `500 Internal Server Error`: 서버 내부 오류
+
+---
+
+### 6. 실시간 센서 분석 (프로덕션용)
+
+프론트엔드에서 작물 정보만 전송하면 백엔드가 ESP32 디바이스에서 센서 데이터를 자동으로 수집하고 분석합니다. ESP32 물리적 연동 후 프로덕션 환경에서 사용합니다.
+
+```http
+POST /api/realtime/analyze-realtime
+```
+
+**Request Body**
+
+```json
+{
+  "crop_type": "tomato",
+  "equipment_list": ["LED 조명", "환기 시스템", "관수 시스템"],
+  "farm_location": "서울시 강남구",
+  "additional_info": "방울토마토, 재배 3주차"  // optional
+}
+```
+
+**Request Body 필드**
+
+| 필드 | 타입 | 필수 | 설명 |
+|-----|------|------|------|
+| crop_type | string | Yes | 작물 종류 (tomato, lettuce, cucumber 등) |
+| equipment_list | array[string] | No | 사용 중인 장비 목록 |
+| farm_location | string | No | 농장 위치 |
+| additional_info | string | No | 추가 정보 (품종, 재배 기간 등) |
+
+**응답 예시**
+
+```json
+{
+  "sensor_data": {
+    "device_id": "ESP32_001",
+    "temperature": 25.5,
+    "humidity": 65.0,
+    "soil_moisture": 45.0,
+    "light_intensity": 5000.0,
+    "co2_level": 800.0,
+    "timestamp": "2025-12-08T10:30:00"
+  },
+  "analysis": {
+    "growth_environment": { ... },
+    "diseases": [ ... ],
+    "risk_level": "중간",
+    "recommendations": [ ... ],
+    "optimal_conditions": { ... },
+    "analysis_summary": "...",
+    "timestamp": "2025-12-08T10:30:15"
+  },
+  "analysis_time": "2025-12-08T10:30:15",
+  "request_info": {
+    "crop_type": "tomato",
+    "equipment_list": ["LED 조명", "환기 시스템"],
+    "farm_location": "서울시 강남구"
+  }
+}
+```
+
+**응답 필드**
+
+| 필드 | 타입 | 설명 |
+|-----|------|------|
+| sensor_data | SensorData | ESP32에서 수집한 센서 데이터 |
+| analysis | AIAnalysisResponse | AI 분석 결과 (NCPMS 데이터 포함) |
+| analysis_time | datetime | 분석 완료 시각 |
+| request_info | object | 요청 정보 (작물, 장비, 위치) |
+
+**상태 코드**
+- `200 OK`: 정상 처리
+- `422 Unprocessable Entity`: 입력 데이터 유효성 오류
+- `500 Internal Server Error`: 서버 내부 오류 (ESP32 연결 실패 포함)
+- `503 Service Unavailable`: ESP32 디바이스 사용 불가
+
+---
+
+### 7. ESP32 센서 상태 확인
+
+ESP32 디바이스의 연결 상태를 확인합니다.
+
+```http
+GET /api/realtime/sensor-status
+```
+
+**응답 예시**
+
+```json
+{
+  "status": "connected",
+  "device_id": "ESP32_001",
+  "last_update": "2025-12-08T10:30:00",
+  "message": "ESP32 디바이스 정상 작동 중"
+}
+```
+
+**상태 코드**
+- `200 OK`: ESP32 연결 성공
+- `503 Service Unavailable`: ESP32 연결 실패
+
+---
+
+### 8. 최신 센서 데이터 조회
+
+ESP32로부터 센서 데이터만 조회합니다 (분석 없이).
+
+```http
+GET /api/realtime/latest-sensor-data
+```
+
+**응답 예시**
+
+```json
+{
+  "device_id": "ESP32_001",
+  "temperature": 25.5,
+  "humidity": 65.0,
+  "soil_moisture": 45.0,
+  "light_intensity": 5000.0,
+  "co2_level": 800.0,
+  "timestamp": "2025-12-08T10:30:00"
+}
+```
+
+**상태 코드**
+- `200 OK`: 정상 처리
+- `503 Service Unavailable`: ESP32 연결 실패
+
+---
+
+### 9. NCPMS API 테스트
+
+특정 병해충에 대한 NCPMS 데이터를 테스트합니다.
+
+```http
+GET /api/dummy/test-ncpms/{disease_name}
+```
+
+**경로 파라미터**
+
+| 파라미터 | 타입 | 설명 |
+|---------|------|------|
+| disease_name | string | 병해충 이름 (예: 잿빛곰팡이병, 역병, 탄저병) |
+
+**예시**
+
+```http
+GET /api/dummy/test-ncpms/잿빛곰팡이병
+```
+
+**응답:** 병해충 상세 정보 (scientific_name, images, detailed_symptoms, management 등)
+
+**상태 코드**
+- `200 OK`: 정상 처리
+- `404 Not Found`: 해당 병해충 데이터 없음
+
+---
+
 ## 📊 데이터 모델
 
 ### SensorData
@@ -403,7 +666,18 @@ curl -X POST "http://localhost:8000/api/sensor/analyze?crop_type=tomato" \
 
 ---
 
-## 📝 변경 이력
+## 📋 변경 이력
+
+### v1.2.0 (2025-12-08)
+- 실시간 센서 API 추가 (`/api/realtime`)
+- ESP32 자동 데이터 수집 기능
+- 더미 데이터 API 분리 (`/api/dummy`)
+- ESP32 상태 확인 API 추가
+
+### v1.1.0 (2025-12-07)
+- NCPMS API 통합
+- 병해충 이미지 및 상세 정보 제공
+- 더미 데이터 테스트 API 추가
 
 ### v1.0.0 (2025-12-06)
 - 초기 API 구현

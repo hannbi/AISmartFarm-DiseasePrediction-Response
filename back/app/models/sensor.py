@@ -61,6 +61,14 @@ class DiseaseInfo(BaseModel):
     reason: str = Field(..., description="발생 원인/조건")
     symptoms: Optional[str] = Field(None, description="주요 증상")
     prevention: Optional[str] = Field(None, description="예방 방법")
+    
+    # NCPMS 연동 추가 필드
+    scientific_name: Optional[str] = Field(None, description="학명")
+    images: Optional[list[str]] = Field(None, description="병해충 이미지 URL 목록")
+    detailed_symptoms: Optional[list[str]] = Field(None, description="상세 증상 목록")
+    management: Optional[dict] = Field(None, description="방제 정보 (예방, 치료)")
+    reference_url: Optional[str] = Field(None, description="참고 URL")
+    source: Optional[str] = Field(None, description="정보 출처")
 
 
 class GrowthEnvironmentScore(BaseModel):

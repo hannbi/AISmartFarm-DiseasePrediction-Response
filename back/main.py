@@ -4,7 +4,7 @@ from contextlib import asynccontextmanager
 import logging
 
 from app.core.config import settings
-from app.api.routes import sensor, health
+from app.api.routes import sensor, health, dummy, realtime
 
 # 로깅 설정
 logging.basicConfig(
@@ -33,7 +33,7 @@ app = FastAPI(
 # CORS 설정
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=settings.CORS_ORIGINS,
+    allow_origins=settings.cors_origins_list,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -42,6 +42,8 @@ app.add_middleware(
 # 라우터 등록
 app.include_router(health.router, prefix="/api", tags=["Health"])
 app.include_router(sensor.router, prefix="/api/sensor", tags=["Sensor"])
+app.include_router(dummy.router, prefix="/api/dummy", tags=["Dummy (Test)"])
+app.include_router(realtime.router, prefix="/api/realtime", tags=["Realtime (ESP32)"])
 
 
 @app.get("/")
