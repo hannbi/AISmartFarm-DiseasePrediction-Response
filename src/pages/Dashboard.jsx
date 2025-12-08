@@ -26,11 +26,14 @@ export default function Dashboard() {
     alert("솔루션 확인: 선택 장비 - " + (selected.join(", ") || "없음"));
   };
 
-  // Hover state for warning tooltip
+  // Hover state for warning tooltips
   const [showTooltip, setShowTooltip] = useState(false);
+  const [showRiskTooltip, setShowRiskTooltip] = useState(false);
   
   // Show warning icon only if stress is 70 or above
   const showWarning = metrics.stress >= 70;
+  // Show warning icon only if risk is 70 or above
+  const showRiskWarning = metrics.risk >= 70;
 
   return (
     <div style={styles.container}>
@@ -164,9 +167,44 @@ export default function Dashboard() {
           </div>
 
           <div style={{ ...styles.rightCard, gridRow: "1 / span 2" }}>
-            <div style={styles.cardTitle}>병해 위험도</div>
-            <div style={styles.riskValue}>{metrics.risk}</div>
-            <svg width="220" height="90" viewBox="0 0 220 90">
+            <div style={styles.cardTitle}>
+              병해 위험도{" "}
+              {showRiskWarning && (
+                <span
+                  style={styles.warnIcon}
+                  onMouseEnter={() => setShowRiskTooltip(true)}
+                  onMouseLeave={() => setShowRiskTooltip(false)}
+                >
+                  ⚠️
+                  {showRiskTooltip && (
+                    <div style={{...styles.tooltip, background: "rgba(255, 235, 235, 0.6)", border: "2px solid #ff6b6b"}}>
+                      <div style={styles.tooltipHeader}>
+                        ⚠️ 병해 위험도 주의
+                      </div>
+                      <div style={styles.tooltipContent}>
+                        현재 환경은 병해가
+                        <br />
+                        발생하기 쉬운 조건입니다.
+                      </div>
+                    </div>
+                  )}
+                </span>
+              )}
+            </div>
+            <div style={styles.riskBarContainer}>
+              <div style={styles.riskValue}>{metrics.risk}</div>
+              <div style={styles.progressBarWrapper}>
+                <div style={styles.progressBarBackground}>
+                  <div 
+                    style={{
+                      ...styles.progressBarFill,
+                      width: `${metrics.risk}%`
+                    }}
+                  />
+                </div>
+              </div>
+            </div>
+            <svg width="220" height="90" viewBox="0 0 220 90" style={{ marginTop: "16px" }}>
               <path d="M0 70 C50 40 120 30 220 50 L220 90 L0 90 Z" fill="#ffd7d7" stroke="#f06060" strokeWidth="2" />
             </svg>
           </div>
@@ -232,8 +270,8 @@ const styles = {
   valueBlue: { color: "#2b7aff", fontSize: "20px", fontWeight: 800 },
   valueOrange: { color: "#ff9a2a", fontSize: "20px", fontWeight: 800 },
   valueRed: { color: "#ff4d4f", fontSize: "20px", fontWeight: 800 },
-  centerCard: { border: "1px solid #ddd", borderRadius: "12px", padding: "18px", textAlign: "center", minHeight: "240px", display: "flex", flexDirection: "column", justifyContent: "center", alignItems: "center" },
-  rightCard: { border: "1px solid #ddd", borderRadius: "12px", padding: "18px", textAlign: "center", minHeight: "240px", display: "flex", flexDirection: "column", justifyContent: "center", alignItems: "center" },
+  centerCard: { border: "1px solid #ddd", borderRadius: "12px", padding: "18px 18px 18px 18px", paddingTop: "32px", textAlign: "center", minHeight: "240px", display: "flex", flexDirection: "column", justifyContent: "center", alignItems: "center" },
+  rightCard: { border: "1px solid #ddd", borderRadius: "12px", padding: "18px 18px 18px 18px", paddingTop: "8px", textAlign: "center", minHeight: "240px", display: "flex", flexDirection: "column", justifyContent: "center", alignItems: "center" },
   // centerNote removed as per design
   warnIcon: { marginLeft: "8px", fontSize: "18px", cursor: "pointer", position: "relative", display: "inline-block" },
   tooltip: {
@@ -265,9 +303,26 @@ const styles = {
     lineHeight: "1.5",
   },
   rightNote: { color: "#7a1a1a", background: "#fff0f0", padding: "10px", borderRadius: "8px", margin: "8px auto", maxWidth: "280px", fontSize: "13px" },
-  cardTitle: { color: "#000", fontWeight: 700, marginBottom: "18px" },
+  cardTitle: { color: "#000", fontWeight: 700, marginBottom: "18px", marginTop: "0" },
   donutWrap: { display: "flex", justifyContent: "center", alignItems: "center", marginTop: "24px" },
-  riskValue: { color: "#ff4d4f", fontWeight: 800, fontSize: "24px", marginBottom: "6px" },
+  riskBarContainer: { display: "flex", alignItems: "center", gap: "12px", marginTop: "16px", width: "100%", maxWidth: "200px" },
+  riskValue: { color: "#ff4d4f", fontWeight: 800, fontSize: "24px", minWidth: "45px", textAlign: "left" },
+  progressBarWrapper: { flex: 1, display: "flex", alignItems: "center", minWidth: 0 },
+  progressBarBackground: {
+    width: "100%",
+    height: "24px",
+    backgroundColor: "#e0e0e0",
+    borderRadius: "12px",
+    overflow: "hidden",
+    position: "relative",
+  },
+  progressBarFill: {
+    height: "100%",
+    backgroundColor: "#ff4d4f",
+    borderRadius: "12px",
+    transition: "width 0.3s ease",
+    minWidth: "2px",
+  },
   toolsBox: { marginTop: "26px", border: "1px solid #ddd", borderRadius: "12px", padding: "20px" },
   toolsTitle: { color: "#000", textAlign: "center", fontWeight: 700, marginBottom: "12px" },
   toolsRow: { display: "flex", gap: "12px", justifyContent: "center", flexWrap: "wrap" },
