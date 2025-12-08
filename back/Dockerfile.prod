@@ -1,0 +1,47 @@
+# 프로덕션용 Dockerfile
+FROM python:3.11-slim as builder
+
+WORKDIR /app
+
+# 의존성 설치
+COPY requirements.txt .
+RUN pip install --user --no-cache-dir -r requirements.txt
+
+# 프로덕션 스테이지
+FROM python:3.11-slim
+
+# 보안: root가 아닌 사용자 생성
+RUN useradd -m -u 1000 appuser
+
+WORKDIR /app
+
+# 환경 변수 설정
+ENV PYTHONUNBUFFERED=1 \
+    PYTHONDONTWRITEBYTECODE=1 \
+    PATH=/home/appuser/.local/bin:$PATH \
+    DEBUG=False
+
+# builder 스테이지에서 설치된 패키지 복사
+COPY --from=builder /root/.local /home/appuser/.local
+
+# 애플리케이션 코드 복사
+COPY --chown=appuser:appuser . .
+
+# 사용자 전환
+USER appuser
+
+# 포트 노출
+EXPOSE 8000
+
+# 헬스체크
+HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
+    CMD python -c "import requests; requests.get('http://localhost:8000/api/health')" || exit 1
+
+# Gunicorn으로 프로덕션 서버 실행
+CMD ["gunicorn", "main:app", \
+     "--workers", "4", \
+     "--worker-class", "uvicorn.workers.UvicornWorker", \
+     "--bind", "0.0.0.0:8000", \
+     "--access-logfile", "-", \
+     "--error-logfile", "-", \
+     "--log-level", "info"]

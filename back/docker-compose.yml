@@ -1,0 +1,37 @@
+version: '3.8'
+
+services:
+  # FastAPI Backend
+  backend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: smartfarm-backend
+    ports:
+      - "8000:8000"
+    environment:
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
+      - OPENAI_MODEL=${OPENAI_MODEL:-gpt-4}
+      - HOST=0.0.0.0
+      - PORT=8000
+      - DEBUG=${DEBUG:-True}
+      - CORS_ORIGINS=${CORS_ORIGINS:-http://localhost:3000,http://localhost:5173}
+      - RAG_ENDPOINT=${RAG_ENDPOINT:-}
+    volumes:
+      # 개발 모드: 코드 변경 시 자동 반영
+      - .:/app
+      # Python 캐시 볼륨 (성능 향상)
+      - /app/__pycache__
+    restart: unless-stopped
+    networks:
+      - smartfarm-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/api/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+
+networks:
+  smartfarm-network:
+    driver: bridge
